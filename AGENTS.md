@@ -55,3 +55,38 @@
 - Maintain consistent component structure
 - Separate CSS files for each component
 - Organize files by feature areas
+
+## Deployment Guidelines
+
+### GitHub Repository
+- **Repository URL**: https://github.com/sohWenMing/chinese-app
+- Branch: `main`
+- All code changes should be committed and pushed to this repository
+
+### Vercel Deployment
+
+**Project URL**: https://chinese-app-sigma.vercel.app (after deployment)
+
+**Deployment Commands**:
+```bash
+# Deploy to production
+vercel --prod
+
+# Deploy to preview (staging)
+vercel
+```
+
+**Setup Steps** (One-time):
+1. Install Vercel CLI: `npm install -g vercel`
+2. Login to Vercel: `vercel login`
+3. Link project: `vercel link` (creates `.vercel/project.json`)
+
+**Auto-Deployment**:
+- Vercel automatically deploys when you push to the `main` branch
+- Preview deployments are created for pull requests
+
+**Important Notes**:
+- Always test locally with `npm run dev` before deploying
+- Run `npm run build` locally to verify the build works
+- Check Vercel dashboard for deployment logs if issues occur
+- Keep `vercel.json` in the root directory for build configuration

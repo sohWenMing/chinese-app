@@ -53,8 +53,123 @@ export function initHanziLookup() {
 }
 
 /**
+ * Resample a stroke to have evenly spaced points
+ * This helps recognition by providing consistent point density
+ * 
+ * @param {Array} points - Array of [x, y] points
+ * @param {number} numPoints - Target number of points (default 15)
+ * @returns {Array} - Resampled points
+ */
+function resampleStroke(points, numPoints = 15) {
+  if (points.length <= 2) return points;
+  if (points.length === numPoints) return points;
+  
+  // Calculate total length
+  let totalLength = 0;
+  const segments = [];
+  for (let i = 1; i < points.length; i++) {
+    const dx = points[i][0] - points[i-1][0];
+    const dy = points[i][1] - points[i-1][1];
+    const length = Math.sqrt(dx*dx + dy*dy);
+    segments.push({ start: points[i-1], end: points[i], length, totalLength });
+    totalLength += length;
+  }
+  
+  if (totalLength === 0) return points.slice(0, numPoints);
+  
+  // Generate evenly spaced points
+  const result = [points[0]];
+  const step = totalLength / (numPoints - 1);
+  let currentLength = 0;
+  let segmentIndex = 0;
+  
+  for (let i = 1; i < numPoints - 1; i++) {
+    const targetLength = i * step;
+    
+    // Find the segment containing this point
+    while (segmentIndex < segments.length && segments[segmentIndex].totalLength + segments[segmentIndex].length < targetLength) {
+      currentLength += segments[segmentIndex].length;
+      segmentIndex++;
+    }
+    
+    if (segmentIndex >= segments.length) {
+      result.push(points[points.length - 1]);
+      continue;
+    }
+    
+    const segment = segments[segmentIndex];
+    const t = (targetLength - segment.totalLength) / segment.length;
+    const x = Math.round(segment.start[0] + t * (segment.end[0] - segment.start[0]));
+    const y = Math.round(segment.start[1] + t * (segment.end[1] - segment.start[1]));
+    result.push([x, y]);
+  }
+  
+  result.push(points[points.length - 1]);
+  return result;
+}
+
+/**
+ * Smooth stroke points using simple moving average
+ * Reduces jitter from touch/mouse input
+ * 
+ * @param {Array} points - Array of [x, y] points
+ * @param {number} windowSize - Smoothing window size (default 3)
+ * @returns {Array} - Smoothed points
+ */
+function smoothStroke(points, windowSize = 3) {
+  if (points.length <= windowSize) return points;
+  
+  const result = [];
+  const halfWindow = Math.floor(windowSize / 2);
+  
+  for (let i = 0; i < points.length; i++) {
+    let sumX = 0, sumY = 0, count = 0;
+    
+    for (let j = -halfWindow; j <= halfWindow; j++) {
+      const index = i + j;
+      if (index >= 0 && index < points.length) {
+        sumX += points[index][0];
+        sumY += points[index][1];
+        count++;
+      }
+    }
+    
+    result.push([Math.round(sumX / count), Math.round(sumY / count)]);
+  }
+  
+  return result;
+}
+
+/**
+ * Remove duplicate points that are too close together
+ * 
+ * @param {Array} points - Array of [x, y] points
+ * @param {number} minDistance - Minimum distance between points (default 2)
+ * @returns {Array} - Deduplicated points
+ */
+function deduplicatePoints(points, minDistance = 2) {
+  if (points.length <= 1) return points;
+  
+  const result = [points[0]];
+  
+  for (let i = 1; i < points.length; i++) {
+    const lastPoint = result[result.length - 1];
+    const dx = points[i][0] - lastPoint[0];
+    const dy = points[i][1] - lastPoint[1];
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    
+    if (distance >= minDistance) {
+      result.push(points[i]);
+    }
+  }
+  
+  return result;
+}
+
+/**
  * Convert stroke data from our format to HanziLookupJS format
  * Normalizes coordinates to 0-255 range expected by HanziLookupJS
+ * Applies resampling, smoothing, and deduplication for better recognition
  * 
  * Our format: [{ points: [{x, y, pressure, timestamp}], startTime, endTime }]
  * HanziLookup format: [[ [x, y], [x, y], ... ], [ [x, y], ... ]]
@@ -92,10 +207,22 @@ function convertStrokesToHanziFormat(strokes) {
   const offsetY = (255 - height * scale) / 2 - minY * scale;
   
   return validStrokes.map(stroke => {
-    return stroke.points.map(point => [
+    // Convert to [x, y] format and normalize
+    let normalizedPoints = stroke.points.map(point => [
       Math.round(point.x * scale + offsetX),
       Math.round(point.y * scale + offsetY)
     ]);
+    
+    // Remove duplicate points
+    normalizedPoints = deduplicatePoints(normalizedPoints, 2);
+    
+    // Smooth the stroke
+    normalizedPoints = smoothStroke(normalizedPoints, 3);
+    
+    // Resample to ensure consistent point count (15 points per stroke)
+    normalizedPoints = resampleStroke(normalizedPoints, 15);
+    
+    return normalizedPoints;
   });
 }
 
@@ -131,16 +258,16 @@ export async function recognizeCharacter(strokes, maxCandidates = 8) {
     // Create analyzed character
     const analyzedChar = new window.HanziLookup.AnalyzedCharacter(hanziStrokes);
     
-    // Perform matching
+    // Perform matching - request more candidates for better results
     const matches = await new Promise((resolve) => {
-      mmahMatcher.match(analyzedChar, maxCandidates, (results) => {
+      mmahMatcher.match(analyzedChar, 20, (results) => {  // Request 20 candidates
         resolve(results);
       });
     });
     
     // Convert matches to our format with pinyin
     const results = await Promise.all(
-      matches.slice(0, 5).map(async (match) => {
+      matches.slice(0, 8).map(async (match) => {  // Return top 8
         const pinyin = toPinyin(match.character);
         return {
           character: match.character,

@@ -7,6 +7,7 @@
    - Verify functionality works as expected
    - Ensure code meets specifications before human review
    - Document test results in comments
+   - Store all test result screenshots in a test_results/screenshots folder
 
 2. **Follow the roadmap and plan**
    - Reference `plans/ROADMAP.md` for project structure and phases
@@ -66,6 +67,7 @@
 ## Deployment Guidelines
 
 ### GitHub Repository
+
 - **Repository URL**: https://github.com/sohWenMing/chinese-app
 - Branch: `main`
 - All code changes should be committed and pushed to this repository
@@ -78,17 +80,21 @@
 Just say **"deploy"** - the skill will handle everything automatically.
 
 **Setup (One-time)**:
+
 1. Get token from: https://vercel.com/account/tokens
 2. Create `.env` file: `cp .env.example .env`
 3. Add token: `VERCEL_TOKEN=your_token_here`
 
 **Auto-Deployment**:
+
 - Vercel auto-deploys when you push to `main` branch
 - Manual `vercel --prod` only needed for immediate deployment
 
 **Important Notes**:
+
 - Never commit `.env` file (it's in .gitignore)
 - Always test locally with `npm run dev` before deploying
 - Run `npm run build` locally to verify the build works
 - Check Vercel dashboard for deployment logs if issues occur
 - Keep `vercel.json` in the root directory for build configuration
+

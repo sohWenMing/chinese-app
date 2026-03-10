@@ -1,0 +1,52 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - heading "Bobo's Chinese Writing App" [level=1] [ref=e5]
+  - main [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - heading "Write Your Chinese Characters!" [level=2] [ref=e9]
+        - paragraph [ref=e10]: Click a box to start writing. Use the arrow to move to the next box when you're done!
+      - generic [ref=e11]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]:
+            - generic [ref=e15]: "1"
+            - generic [ref=e61]: ✓
+          - generic [ref=e78]:
+            - generic [ref=e79]: 一
+            - generic [ref=e80]: yi1
+          - generic:
+            - img
+          - generic [ref=e18]:
+            - button "Cancel confirmation" [ref=e81]: ✕
+            - button "Clear all strokes" [ref=e20]: 🗑️
+        - generic [ref=e22] [cursor=pointer]:
+          - generic [ref=e24]: "2"
+          - img [ref=e26]
+          - generic [ref=e27]:
+            - button "Confirm character" [disabled] [ref=e28]: ✓
+            - button "Clear all strokes" [disabled] [ref=e29]: 🗑️
+        - generic [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: "3"
+          - img [ref=e35]
+          - generic [ref=e36]:
+            - button "Confirm character" [disabled] [ref=e37]: ✓
+            - button "Clear all strokes" [disabled] [ref=e38]: 🗑️
+        - generic [ref=e40] [cursor=pointer]:
+          - generic [ref=e42]: "4"
+          - img [ref=e44]
+          - generic [ref=e45]:
+            - button "Confirm character" [disabled] [ref=e46]: ✓
+            - button "Clear all strokes" [disabled] [ref=e47]: 🗑️
+      - generic [ref=e48]:
+        - button "Previous character" [disabled] [ref=e49]: ←
+        - generic [ref=e50]:
+          - button "Go to cell 1" [ref=e51] [cursor=pointer]
+          - button "Go to cell 2" [ref=e52] [cursor=pointer]
+          - button "Go to cell 3" [ref=e53] [cursor=pointer]
+          - button "Go to cell 4" [ref=e54] [cursor=pointer]
+        - button "Next character" [ref=e55] [cursor=pointer]: →
+      - generic [ref=e56]:
+        - button "📥 Export Your Writing" [active] [ref=e57] [cursor=pointer]
+        - paragraph [ref=e58]: 1 characters confirmed!
+  - contentinfo [ref=e59]:
+    - paragraph [ref=e60]: Practice Chinese characters with Bobo!

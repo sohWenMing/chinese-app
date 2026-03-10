@@ -49,6 +49,13 @@
    - Verify code quality
    - Prepare for human review
 
+5. **Update Roadmap**
+   - **CRITICAL**: After completing a phase, update `plans/ROADMAP.md`
+   - Mark completed checklist items with `[x]` instead of `[ ]`
+   - Add completion date/timestamp in a comment if helpful
+   - This ensures future agents know what's already done
+   - Example: Change `- [ ] 1.1: Create React project` to `- [x] 1.1: Create React project`
+
 ## File Structure Guidelines
 
 - Use `plans/ROADMAP.md` as the authoritative source

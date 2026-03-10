@@ -166,6 +166,7 @@ export function CharacterGrid() {
               onClear={handleClear}
               onConfirm={handleConfirm}
               onCancelConfirm={handleCancelConfirm}
+              onActivate={handleCellClick}
             />
           </div>
         ))}

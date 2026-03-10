@@ -11,6 +11,7 @@ export function CharacterCell({
   onClear,
   onConfirm,
   onCancelConfirm,
+  onActivate,
 }) {
   const canvasRef = useRef(null);
   const [points, setPoints] = useState([]);
@@ -30,12 +31,18 @@ export function CharacterCell({
   }, []);
 
   const handlePointerDown = useCallback((e) => {
-    if (!isActive) return;
+    if (!isActive) {
+      // Activate this cell when clicked
+      if (onActivate) {
+        onActivate(index);
+      }
+      return;
+    }
     e.preventDefault();
     setIsDrawing(true);
     const point = getPoint(e);
     setPoints([point]);
-  }, [isActive]);
+  }, [isActive, onActivate, index]);
 
   const handlePointerMove = useCallback((e) => {
     if (!isDrawing || !isActive) return;

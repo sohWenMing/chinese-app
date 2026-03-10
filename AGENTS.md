@@ -65,27 +65,22 @@
 
 ### Vercel Deployment
 
-**Project URL**: https://chinese-app-sigma.vercel.app (after deployment)
+**Live URL**: https://chinese-9kpf4ek2l-wenmingsoh-9763s-projects.vercel.app
 
-**Deployment Commands**:
-```bash
-# Deploy to production
-vercel --prod
+**Easy Deployment (Skill)**:
+Just say **"deploy"** - the skill will handle everything automatically.
 
-# Deploy to preview (staging)
-vercel
-```
-
-**Setup Steps** (One-time):
-1. Install Vercel CLI: `npm install -g vercel`
-2. Login to Vercel: `vercel login`
-3. Link project: `vercel link` (creates `.vercel/project.json`)
+**Setup (One-time)**:
+1. Get token from: https://vercel.com/account/tokens
+2. Create `.env` file: `cp .env.example .env`
+3. Add token: `VERCEL_TOKEN=your_token_here`
 
 **Auto-Deployment**:
-- Vercel automatically deploys when you push to the `main` branch
-- Preview deployments are created for pull requests
+- Vercel auto-deploys when you push to `main` branch
+- Manual `vercel --prod` only needed for immediate deployment
 
 **Important Notes**:
+- Never commit `.env` file (it's in .gitignore)
 - Always test locally with `npm run dev` before deploying
 - Run `npm run build` locally to verify the build works
 - Check Vercel dashboard for deployment logs if issues occur

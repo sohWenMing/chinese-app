@@ -1,7 +1,7 @@
 import React from 'react';
 import { Header } from './components/Layout/Header';
 import { Footer } from './components/Layout/Footer';
-import { Canvas } from './components/Canvas/Canvas';
+import { CharacterGrid } from './components/Canvas/CharacterGrid';
 import './styles/global.css';
 import './App.css';
 
@@ -10,7 +10,7 @@ function App() {
     <div className="app">
       <Header />
       <main className="main-content">
-        <Canvas />
+        <CharacterGrid />
       </main>
       <Footer />
     </div>

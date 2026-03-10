@@ -1,0 +1,27 @@
+:root {
+  --color-primary: #FFB6C1;
+  --color-secondary: #FF69B4;
+  --color-accent: #DDA0DD;
+  --color-background: #FFF0F5;
+  --color-canvas: #FFFFFF;
+  --color-text: #4A4A4A;
+  --color-success: #98FB98;
+  --color-error: #FFB6C1;
+  
+  --font-family: 'Quicksand', sans-serif;
+  --font-size-small: 0.875rem;
+  --font-size-normal: 1rem;
+  --font-size-large: 1.25rem;
+  --font-size-xl: 1.5rem;
+  
+  --border-radius: 16px;
+  --border-radius-small: 8px;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  --shadow-soft: 0 4px 20px rgba(255, 182, 193, 0.3);
+  --shadow-medium: 0 8px 30px rgba(255, 105, 180, 0.2);
+}

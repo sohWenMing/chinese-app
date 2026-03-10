@@ -1,0 +1,96 @@
+.canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+}
+
+.canvas-wrapper {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  background: var(--color-canvas);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-medium);
+  overflow: hidden;
+  border: 4px solid var(--color-primary);
+}
+
+.canvas-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.canvas-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.grid-line {
+  position: absolute;
+  background: var(--color-accent);
+  opacity: 0.3;
+}
+
+.grid-line.horizontal {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.grid-line.vertical {
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.grid-line.diagonal-1 {
+  top: 0;
+  left: 0;
+  width: 141%;
+  height: 1px;
+  transform-origin: 0 0;
+  transform: rotate(45deg);
+}
+
+.grid-line.diagonal-2 {
+  top: 0;
+  right: 0;
+  width: 141%;
+  height: 1px;
+  transform-origin: 100% 0;
+  transform: rotate(-45deg);
+}
+
+.clear-button {
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent) 100%);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-normal);
+  font-weight: 600;
+  border-radius: var(--border-radius-small);
+  box-shadow: var(--shadow-soft);
+}
+
+.clear-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.clear-button:active {
+  transform: translateY(0);
+}

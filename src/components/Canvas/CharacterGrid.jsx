@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { CharacterCell } from './CharacterCell';
-import { exportComprehensiveSession } from '../../utils/export';
+import HelpModal from '../Layout/HelpModal';
+import { authenticatedFetch } from '../../utils/sessionManager';
 import { recognizeCharacter, captureCanvasImage, initHanziLookup } from '../../utils/hanziRecognition';
 import './CharacterGrid.css';
 
@@ -24,6 +25,13 @@ export function CharacterGrid() {
   });
   const [sessionStartTime] = useState(Date.now());
   const [hanziLookupReady, setHanziLookupReady] = useState(false);
+  
+  // Help modal state
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [helpResponse, setHelpResponse] = useState(null);
+  const [helpLoading, setHelpLoading] = useState(false);
+  const [helpError, setHelpError] = useState(null);
+  const [lastHelpRequestTime, setLastHelpRequestTime] = useState(0);
 
   // Initialize HanziLookupJS on component mount
   useEffect(() => {
@@ -123,13 +131,75 @@ export function CharacterGrid() {
     setActiveIndex(index);
   }, []);
 
-  const handleExport = useCallback(() => {
-    const sessionId = `session_${sessionStartTime}`;
-    exportComprehensiveSession(sessionId, confirmedCharacters);
-  }, [confirmedCharacters, sessionStartTime]);
+  const handleGetHelp = useCallback(async () => {
+    // Check cooldown (5 seconds between requests)
+    const now = Date.now();
+    if (now - lastHelpRequestTime < 5000) {
+      setHelpError('Please wait a moment before asking Bobo again! ⏱️');
+      setHelpModalOpen(true);
+      return;
+    }
+
+    // Filter only confirmed characters
+    const confirmed = confirmedCharacters.filter(char => char !== null);
+    
+    if (confirmed.length === 0) {
+      setHelpError('Please confirm at least one character first! ✍️');
+      setHelpModalOpen(true);
+      return;
+    }
+
+    setHelpLoading(true);
+    setHelpError(null);
+    setHelpResponse(null);
+    setHelpModalOpen(true);
+    setLastHelpRequestTime(now);
+
+    try {
+      // Prepare character data for API
+      const characterData = confirmed.map(char => ({
+        char: char.character,
+        pinyin: char.pinyin
+      }));
+
+      const response = await authenticatedFetch('/api/analyze-homework', {
+        method: 'POST',
+        body: JSON.stringify({ characters: characterData }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setHelpResponse(data.response);
+      } else {
+        setHelpError(data.error || 'Bobo had trouble thinking. Please try again! 🐻');
+      }
+    } catch (error) {
+      console.error('Error getting help:', error);
+      if (error.message === 'No valid session') {
+        setHelpError('Your session expired. Please refresh the page! 🔒');
+      } else {
+        setHelpError('Something went wrong. Please try again later! 😅');
+      }
+    } finally {
+      setHelpLoading(false);
+    }
+  }, [confirmedCharacters, lastHelpRequestTime]);
+
+  const handleCloseHelpModal = useCallback(() => {
+    setHelpModalOpen(false);
+    // Clear error after closing so it doesn't show next time
+    if (helpError) {
+      setTimeout(() => setHelpError(null), 300);
+    }
+  }, [helpError]);
 
   const hasAnyStrokes = characterData.some(char => char.strokes.length > 0);
   const hasAnyConfirmed = confirmedCharacters.some(char => char !== null);
+  
+  // Calculate cooldown remaining
+  const cooldownRemaining = Math.max(0, 5000 - (Date.now() - lastHelpRequestTime));
+  const isOnCooldown = cooldownRemaining > 0;
 
   return (
     <div className="character-grid-container">
@@ -234,20 +304,33 @@ export function CharacterGrid() {
       
       <div className="grid-actions">
         <button 
-          className="export-button"
-          onClick={handleExport}
-          disabled={!hasAnyStrokes}
+          className="help-button"
+          onClick={handleGetHelp}
+          disabled={!hasAnyConfirmed || isOnCooldown}
         >
-          📥 Export Your Writing
+          {isOnCooldown ? (
+            <>⏱️ Wait {Math.ceil(cooldownRemaining / 1000)}s</>
+          ) : (
+            <>🐻 Get Bobo's Help!</>
+          )}
         </button>
-        <p className="export-hint">
+        <p className="help-hint">
           {hasAnyConfirmed 
-            ? `${confirmedCharacters.filter(c => c).length} characters confirmed!` 
+            ? `Ready to get help with ${confirmedCharacters.filter(c => c).length} character${confirmedCharacters.filter(c => c).length !== 1 ? 's' : ''}! 🌟` 
             : hasAnyStrokes 
-              ? `Click ✓ to confirm characters`
-              : 'Start writing to enable export'}
+              ? `Click ✓ to confirm characters first`
+              : 'Write and confirm characters to get help'}
         </p>
       </div>
+      
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={helpModalOpen}
+        onClose={handleCloseHelpModal}
+        response={helpResponse}
+        isLoading={helpLoading}
+        error={helpError}
+      />
     </div>
   );
 }

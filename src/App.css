@@ -12,3 +12,33 @@
   align-items: center;
   padding: var(--spacing-lg);
 }
+
+.app-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-background) 0%, #FFE4E1 100%);
+}
+
+.app-loading-spinner {
+  font-size: 64px;
+  animation: bounce 1s ease-in-out infinite;
+  margin-bottom: var(--spacing-lg);
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.app-loading p {
+  color: var(--color-text);
+  font-size: var(--font-size-large);
+  font-weight: 600;
+}

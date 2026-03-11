@@ -11,29 +11,21 @@ An interactive, playful Chinese character writing app for 8-year-old learners. T
 │  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐   │
 │  │  Perfect    │  │   Bobo       │  │  Stroke Data    │   │
 │  │  Freehand   │→ │   Character  │→ │  Capture &      │   │
-│  │  Canvas     │  │   (SVG/PNG)  │  │  Export (JSON)  │   │
+│  │  Canvas     │  │   (SVG/PNG)  │  │  LLM Analysis   │   │
 │  └─────────────┘  └──────────────┘  └─────────────────┘   │
 │                                                             │
 │  CSS: Separate .css files (component-scoped)               │
 │  Colors: Pink, purple, soft pastels                        │
 └─────────────────────────────────────────────────────────────┘
-         ↓
-┌─────────────────────────────────────────────────────────────┐
-│  Stroke Data Structure (for future LLM integration)        │
-│  {                                                           │
-│    sessionId: string,                                        │
-│    timestamp: number,                                        │
-│    characters: [                                             │
-│      {                                                       │
-│        charIndex: 0,                                         │
-│        strokes: [                                            │
-│          { points: [{x, y, pressure, timestamp}],            │
-│            startTime, endTime }, ...                         │
-│        ]                                                     │
-│      }                                                       │
-│    ]                                                         │
-│  }                                                           │
-└─────────────────────────────────────────────────────────────┘
+         ↓                              ↓
+┌─────────────────────┐      ┌──────────────────────────┐
+│  Stroke Data JSON   │      │  Gemini 1.5 Flash API    │
+│  {                  │      │  - Password protected    │
+│    characters: [    │  →   │  - Kid-friendly prompts  │
+│      { char, pinyin }      │  - Encouraging feedback  │
+│    ]                │      │  - Pronunciation help    │
+│  }                  │      └──────────────────────────┘
+└─────────────────────┘
 ```
 
 ## Phase Breakdown
@@ -88,14 +80,16 @@ An interactive, playful Chinese character writing app for 8-year-old learners. T
 
 **Deliverable**: Polished, deployable app
 
-### Phase 6: Backend Prep (Future LLM integration)
-- [ ] 6.1: API endpoint structure (Go backend prep)
-- [ ] 6.2: Stroke data format standardization
-- [ ] 6.3: Local storage (save sessions)
-- [ ] 6.4: Session history view
-- [ ] 6.5: Export all sessions as JSON
+### Phase 6: Gemini LLM Integration ✅ COMPLETE - March 11, 2026
+- [x] 6.1: Create `/api/analyze-homework` serverless function
+- [x] 6.2: Integrate Gemini 1.5 Flash API with kid-friendly prompts
+- [x] 6.3: Add password protection with session management
+- [x] 6.4: Create "Get Bobo's Help" button to trigger LLM analysis
+- [x] 6.5: Display responses in engaging modal with emojis
+- [x] 6.6: Rate limiting (5-second cooldown between requests)
+- [x] 6.7: Environment variable configuration (GEMINI_API_KEY, FAMILY_PASSWORD)
 
-**Deliverable**: Ready for Go backend + LLM integration
+**Deliverable**: App provides AI-powered feedback on Chinese homework with family-only access ✅
 
 ## File Structure
 
@@ -104,6 +98,10 @@ chinese_app/
 ├── index.html
 ├── package.json
 ├── vite.config.js
+├── vercel.json
+├── api/                           # Vercel serverless functions
+│   ├── validate-password.js       # Password validation endpoint
+│   └── analyze-homework.js        # Gemini LLM integration
 ├── src/
 │   ├── main.jsx
 │   ├── App.jsx
@@ -112,16 +110,20 @@ chinese_app/
 │   │   │   ├── Canvas.jsx
 │   │   │   ├── Canvas.css
 │   │   │   ├── CharacterCell.jsx
-│   │   │   └── CharacterCell.css
-│   │   ├── Bobo/
-│   │   │   ├── Bobo.jsx
-│   │   │   ├── Bobo.css
-│   │   │   └── Bobo.svg
+│   │   │   ├── CharacterCell.css
+│   │   │   ├── CharacterGrid.jsx
+│   │   │   ├── CharacterGrid.css
+│   │   │   └── CharacterGrid.test.jsx
+│   │   ├── Auth/
+│   │   │   ├── PasswordGate.jsx   # Family password protection
+│   │   │   └── PasswordGate.css
 │   │   ├── Layout/
 │   │   │   ├── Header.jsx
 │   │   │   ├── Header.css
 │   │   │   ├── Footer.jsx
-│   │   │   └── Footer.css
+│   │   │   ├── Footer.css
+│   │   │   ├── HelpModal.jsx      # LLM response display
+│   │   │   └── HelpModal.css
 │   │   └── UI/
 │   │       ├── Button.jsx
 │   │       ├── Button.css
@@ -130,14 +132,19 @@ chinese_app/
 │   │   ├── useStrokeCapture.js
 │   │   └── useBoboFeedback.js
 │   ├── utils/
-│   │   ├── strokeData.js
-│   │   └── export.js
+│   │   ├── sessionManager.js      # Session/token management
+│   │   ├── hanziRecognition.js    # Character recognition
+│   │   ├── export.js
+│   │   └── pinyin.js
 │   └── styles/
 │       ├── variables.css (colors, fonts)
 │       ├── global.css
 │       └── theme.css (pink theme)
 ├── public/
-│   └── bobo/ (character assets)
+│   └── hanzilookup/               # HanziLookupJS library files
+│       ├── hanzilookup.min.js
+│       ├── mmah.json
+│       └── orig.json
 └── tests/ (Vitest + React Testing Library)
 ```
 
@@ -162,10 +169,12 @@ chinese_app/
 | Framework | React 18 + Vite | Fast, modern, great ecosystem |
 | Styling | Plain CSS (separate files) | You're familiar, easy to maintain |
 | Canvas | Perfect Freehand | Pressure-sensitive, smooth strokes |
-| Character Data | Hanzi Writer | 9000+ chars, stroke order data |
+| Character Recognition | HanziLookupJS | Real-time handwriting recognition |
+| LLM Integration | Gemini 1.5 Flash | Fast, cost-effective, great for tutoring |
+| Backend | Vercel Serverless Functions | Free tier, secure API key storage |
+| Auth | Session tokens + localStorage | Simple family-only protection |
 | Testing | Vitest + React Testing Library | Fast, React-native |
-| Deployment | Vercel | Free tier, supports Go backend later |
-| State | React Context + localStorage | Simple, no over-engineering |
+| Deployment | Vercel | Free tier, auto-deploy from GitHub |
 
 ## Testing Strategy (Each Phase)
 

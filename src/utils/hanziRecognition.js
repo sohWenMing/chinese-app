@@ -266,8 +266,9 @@ export async function recognizeCharacter(strokes, maxCandidates = 8) {
     });
     
     // Convert matches to our format with pinyin
+    // Request more candidates initially since some may not have pinyin
     const results = await Promise.all(
-      matches.slice(0, 8).map(async (match) => {  // Return top 8
+      matches.slice(0, 20).map(async (match) => {
         const pinyin = toPinyin(match.character);
         return {
           character: match.character,
@@ -277,7 +278,11 @@ export async function recognizeCharacter(strokes, maxCandidates = 8) {
       })
     );
     
-    return results;
+    // Filter to only return characters WITH pinyin, up to 8
+    const validResults = results.filter(r => r.pinyin !== '');
+    
+    // Return up to 8 valid results, or empty array if none found
+    return validResults.slice(0, 8);
   } catch (error) {
     console.error('Error in HanziLookup recognition:', error);
     return fallbackRecognition(strokes);
@@ -315,7 +320,7 @@ async function fallbackRecognition(strokes) {
   
   const candidates = COMMON_CHARACTERS[strokeCount] || [];
   const results = await Promise.all(
-    candidates.slice(0, 5).map(async (char, i) => {
+    candidates.slice(0, 10).map(async (char, i) => {
       const pinyin = toPinyin(char);
       return {
         character: char,
@@ -325,7 +330,9 @@ async function fallbackRecognition(strokes) {
     })
   );
   
-  return results;
+  // Filter to only return characters WITH pinyin
+  const validResults = results.filter(r => r.pinyin !== '');
+  return validResults.slice(0, 5);
 }
 
 /**

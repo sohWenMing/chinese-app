@@ -1,8 +1,12 @@
 /**
- * Simple Pinyin Dictionary for common Chinese characters
- * Browser-compatible alternative to hanzi-to-pinyin
+ * Pinyin Dictionary with pinyin-pro library integration
+ * Combines static cache for common characters with runtime library lookup
+ * for full coverage of ~23,000+ characters
  */
 
+import { pinyin } from 'pinyin-pro';
+
+// Static cache for most common characters (instant lookup)
 const PINYIN_MAP = {
   '一': 'yi1', '乙': 'yi3',
   '二': 'er4', '十': 'shi2', '人': 'ren2', '入': 'ru4', '八': 'ba1',
@@ -22,31 +26,95 @@ const PINYIN_MAP = {
 };
 
 /**
- * Convert a Chinese character to pinyin
+ * Convert a Chinese character to pinyin using pinyin-pro library
+ * Falls back to static cache for performance on common characters
  * @param {string} character - Single Chinese character
- * @returns {string} - Pinyin with tone number
+ * @returns {string} - Pinyin with tone number (e.g., 'yi1', 'han4')
  */
 export function toPinyin(character) {
   if (!character || character.length === 0) return '';
   
   const char = character.charAt(0);
-  const pinyin = PINYIN_MAP[char];
   
-  if (pinyin) {
-    // Remove tone numbers for display if needed
-    return pinyin;
+  // Check static cache first (instant lookup for common characters)
+  const cached = PINYIN_MAP[char];
+  if (cached) {
+    return cached;
   }
   
-  // Return empty string if not found
-  return '';
+  // Use pinyin-pro for all other characters
+  try {
+    const result = pinyin(char, { 
+      toneType: 'num',
+      type: 'array',
+      multiple: false 
+    });
+    
+    // pinyin-pro returns array, get first element
+    const pinyinResult = result[0];
+    
+    // Return empty string if character wasn't recognized
+    if (!pinyinResult || pinyinResult === char) {
+      return '';
+    }
+    
+    return pinyinResult;
+  } catch (error) {
+    console.warn('pinyin-pro lookup failed:', error);
+    return '';
+  }
 }
 
 /**
- * Check if a character is in the pinyin map
+ * Check if a character has pinyin available
  * @param {string} character - Single Chinese character
  * @returns {boolean}
  */
 export function hasPinyin(character) {
   if (!character || character.length === 0) return false;
-  return !!PINYIN_MAP[character.charAt(0)];
+  
+  // Check static cache first
+  if (PINYIN_MAP[character.charAt(0)]) {
+    return true;
+  }
+  
+  // Try pinyin-pro
+  try {
+    const result = pinyin(character, { 
+      toneType: 'num',
+      type: 'array',
+      multiple: false
+    });
+    
+    return result.length > 0 && result[0] !== character && result[0] !== '';
+  } catch (error) {
+    return false;
+  }
 }
+
+/**
+ * Batch convert multiple characters to pinyin
+ * @param {string[]} characters - Array of Chinese characters
+ * @returns {Object} - Map of character to pinyin
+ */
+export function batchToPinyin(characters) {
+  const result = {};
+  
+  if (!Array.isArray(characters)) {
+    return result;
+  }
+  
+  characters.forEach(char => {
+    if (char) {
+      result[char] = toPinyin(char);
+    }
+  });
+  
+  return result;
+}
+
+export default {
+  toPinyin,
+  hasPinyin,
+  batchToPinyin
+};

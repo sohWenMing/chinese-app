@@ -125,8 +125,8 @@ export function CharacterGrid() {
 
   const handleExport = useCallback(() => {
     const sessionId = `session_${sessionStartTime}`;
-    exportComprehensiveSession(sessionId, confirmedCharacters, characterData);
-  }, [characterData, confirmedCharacters, sessionStartTime]);
+    exportComprehensiveSession(sessionId, confirmedCharacters);
+  }, [confirmedCharacters, sessionStartTime]);
 
   const hasAnyStrokes = characterData.some(char => char.strokes.length > 0);
   const hasAnyConfirmed = confirmedCharacters.some(char => char !== null);

@@ -71,15 +71,14 @@ export function createSessionData(sessionId, characters = []) {
 }
 
 /**
- * Export comprehensive writing session data for LLM integration
- * Creates a single JSON with phrase, character metadata, and stroke data
+ * Export writing session data in simplified format for LLM integration
+ * Creates a clean JSON with just phrase and character/pinyin pairs
  * 
- * @param {string} sessionId - Unique session identifier
- * @param {Array} confirmedCharacters - Array of confirmed character objects with timestamps
- * @param {Array} characterData - Array of raw character data with strokes
+ * @param {string} sessionId - Unique session identifier (unused but kept for API consistency)
+ * @param {Array} confirmedCharacters - Array of confirmed character objects
  */
-export function exportComprehensiveSession(sessionId, confirmedCharacters, characterData) {
-  // Filter only confirmed characters (non-null)
+export function exportComprehensiveSession(sessionId, confirmedCharacters) {
+  // Filter only confirmed characters (non-null) and preserve grid order
   const confirmed = confirmedCharacters
     .map((char, index) => ({ ...char, gridIndex: index }))
     .filter(char => char && char.character);
@@ -89,49 +88,26 @@ export function exportComprehensiveSession(sessionId, confirmedCharacters, chara
     return;
   }
   
-  // Sort by confirmation time (when the child confirmed the character)
+  // Sort by confirmation time to maintain writing sequence
   const sortedCharacters = confirmed.sort((a, b) => (a.confirmedAt || 0) - (b.confirmedAt || 0));
   
   // Build the phrase string
   const phrase = sortedCharacters.map(char => char.character).join('');
   
-  // Build comprehensive character data with strokes
-  const charactersWithMetadata = sortedCharacters.map((char, sequenceIndex) => {
-    // Find matching stroke data from characterData
-    const strokeData = characterData[char.gridIndex] || { strokes: [] };
-    
-    return {
-      sequence: sequenceIndex + 1,
-      character: char.character,
-      pinyin: char.pinyin || '',
-      confidence: char.confidence || 0,
-      confirmedAt: char.confirmedAt,
-      gridIndex: char.gridIndex,
-      strokeCount: strokeData.strokes ? strokeData.strokes.length : 0,
-      strokes: strokeData.strokes ? strokeData.strokes.map(stroke => ({
-        points: stroke.points.map(p => ({
-          x: p.x,
-          y: p.y,
-          pressure: p.pressure,
-          timestamp: p.timestamp,
-        })),
-        startTime: stroke.startTime,
-        endTime: stroke.endTime,
-      })) : [],
-    };
-  });
+  // Build simplified character array with just char and pinyin
+  const characters = sortedCharacters.map(char => ({
+    char: char.character,
+    pinyin: char.pinyin || ''
+  }));
   
   const exportData = {
-    sessionId: sessionId || `session_${Date.now()}`,
-    exportedAt: Date.now(),
     phrase: phrase,
-    characterCount: sortedCharacters.length,
-    characters: charactersWithMetadata,
+    characters: characters
   };
   
   // Generate filename with timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const filename = `chinese_writing_${timestamp}.json`;
+  const filename = `chinese_characters_${timestamp}.json`;
   
   // Create and trigger download
   const dataStr = JSON.stringify(exportData, null, 2);
@@ -148,6 +124,6 @@ export function exportComprehensiveSession(sessionId, confirmedCharacters, chara
   
   URL.revokeObjectURL(url);
   
-  console.log('Exported comprehensive session data:', exportData);
+  console.log('Exported character data:', exportData);
   console.log('Saved as:', filename);
 }

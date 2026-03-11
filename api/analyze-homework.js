@@ -93,6 +93,9 @@ Please provide:
 2. Pronunciation guidance for each character 🗣️
 3. One helpful tip about stroke order if applicable ✍️
 4. Encouragement to keep practicing 🌟
+5. For each character, first give a fun english translation for the character, so that she will understand the character's basic usage.
+6. If the child has written more than character, then it should be assumed that she is trying to get understanding regarding a phrase. So you should also show her 
+   the usage of the whole phrase in context.
 
 Make it fun and age-appropriate!`;
 
@@ -110,7 +113,7 @@ Make it fun and age-appropriate!`;
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 500,
+          maxOutputTokens: 1500,
           topP: 0.8,
           topK: 40
         }

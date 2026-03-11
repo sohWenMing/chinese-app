@@ -78,6 +78,9 @@
   box-shadow: 0 10px 40px rgba(255, 182, 193, 0.6);
   min-width: 300px;
   max-width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
   animation: slideIn 0.3s ease;
 }
 
@@ -96,9 +99,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 3px solid #FFE4E1;
+  flex-shrink: 0;
 }
 
 .picker-modal-header h3 {
@@ -131,7 +135,9 @@
 }
 
 .picker-modal-content {
-  margin-bottom: 16px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .picker-candidates {
@@ -191,13 +197,32 @@
 }
 
 .picker-modal-footer {
-  margin-top: 16px;
   padding-top: 12px;
   border-top: 2px solid #FFE4E1;
   font-size: 0.95rem;
   color: #DDA0DD;
   text-align: center;
   font-style: italic;
+  flex-shrink: 0;
+}
+
+/* Scrollbar styling for picker modal */
+.picker-modal-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.picker-modal-content::-webkit-scrollbar-track {
+  background: #FFF0F5;
+  border-radius: 5px;
+}
+
+.picker-modal-content::-webkit-scrollbar-thumb {
+  background: #FF69B4;
+  border-radius: 5px;
+}
+
+.picker-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #FFB6C1;
 }
 
 .grid-cell-wrapper:hover {
@@ -344,6 +369,10 @@
   
   .character-grid-container {
     padding: 16px;
+  }
+  
+  .picker-modal {
+    max-height: 70vh;
   }
 }
 

@@ -1,6 +1,30 @@
 import React from 'react';
 import './HelpModal.css';
 
+// Safely convert markdown bold (**text**) to HTML bold tags
+const parseMarkdownBold = (text) => {
+  if (!text) return '';
+  
+  // First, escape HTML special characters to prevent XSS
+  const escapeHtml = (str) => {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+  
+  // Escape HTML first
+  let escaped = escapeHtml(text);
+  
+  // Convert **text** to <strong>text</strong>
+  // Using a non-greedy match to handle multiple bold sections
+  escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  
+  return escaped;
+};
+
 const HelpModal = ({ isOpen, onClose, response, isLoading, error }) => {
   if (!isOpen) return null;
 
@@ -43,13 +67,10 @@ const HelpModal = ({ isOpen, onClose, response, isLoading, error }) => {
           )}
 
           {!isLoading && !error && response && (
-            <div className="help-modal-response">
-              {response.split('\n').map((paragraph, index) => (
-                <p key={index} className="help-modal-paragraph">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
+            <div 
+              className="help-modal-response"
+              dangerouslySetInnerHTML={{ __html: parseMarkdownBold(response) }}
+            />
           )}
         </div>
 

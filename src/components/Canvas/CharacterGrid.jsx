@@ -188,11 +188,31 @@ export function CharacterGrid() {
 
   const handleCloseHelpModal = useCallback(() => {
     setHelpModalOpen(false);
+    
+    // Only reset the page if we had a successful response (not on error)
+    if (helpResponse && !helpError) {
+      // Reset all state to initial values
+      setActiveIndex(0);
+      setCharacterData(
+        Array(CELL_COUNT).fill(null).map((_, index) => ({
+          charIndex: index,
+          strokes: [],
+        }))
+      );
+      setConfirmedCharacters(Array(CELL_COUNT).fill(null));
+      setPickerState({
+        isOpen: false,
+        cellIndex: null,
+        candidates: [],
+      });
+      setHelpResponse(null);
+    }
+    
     // Clear error after closing so it doesn't show next time
     if (helpError) {
       setTimeout(() => setHelpError(null), 300);
     }
-  }, [helpError]);
+  }, [helpError, helpResponse]);
 
   const hasAnyStrokes = characterData.some(char => char.strokes.length > 0);
   const hasAnyConfirmed = confirmedCharacters.some(char => char !== null);

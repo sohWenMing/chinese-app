@@ -178,18 +178,16 @@
   font-size: var(--font-size-large);
   line-height: 1.8;
   color: var(--color-text);
-}
-
-.help-modal-paragraph {
-  margin: 0 0 var(--spacing-md) 0;
+  white-space: pre-wrap;
   padding: var(--spacing-md);
   background: var(--color-background);
   border-radius: var(--border-radius-small);
   border-left: 4px solid var(--color-secondary);
 }
 
-.help-modal-paragraph:last-child {
-  margin-bottom: 0;
+.help-modal-response strong {
+  font-weight: 700;
+  color: var(--color-primary);
 }
 
 .help-modal-footer {

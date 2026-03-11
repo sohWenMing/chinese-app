@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { CharacterCell } from './CharacterCell';
-import { exportStrokeData } from '../../utils/export';
-import { recognizeCharacter, exportCharactersAsText, captureCanvasImage, initHanziLookup } from '../../utils/hanziRecognition';
+import { exportComprehensiveSession } from '../../utils/export';
+import { recognizeCharacter, captureCanvasImage, initHanziLookup } from '../../utils/hanziRecognition';
 import './CharacterGrid.css';
 
 const CELL_COUNT = 4;
@@ -79,7 +79,7 @@ export function CharacterGrid() {
     });
   }, [characterData]);
 
-  const handlePickerSelect = useCallback((cellIndex, character, pinyin) => {
+  const handlePickerSelect = useCallback((cellIndex, character, pinyin, confidence = 0) => {
     // Capture canvas image
     const canvasSvg = document.querySelector(`.grid-cell-wrapper:nth-child(${cellIndex + 1}) svg`);
     const imageData = captureCanvasImage(canvasSvg);
@@ -90,6 +90,8 @@ export function CharacterGrid() {
         character,
         pinyin,
         imageData,
+        confidence,
+        confirmedAt: Date.now(),
       };
       return updated;
     });
@@ -122,22 +124,8 @@ export function CharacterGrid() {
   }, []);
 
   const handleExport = useCallback(() => {
-    // Export stroke data as JSON
-    const data = {
-      sessionId: `session_${sessionStartTime}`,
-      timestamp: sessionStartTime,
-      totalCells: CELL_COUNT,
-      characters: characterData.filter(char => char.strokes.length > 0).map(char => ({
-        charIndex: char.charIndex,
-        strokeCount: char.strokes.length,
-        strokes: char.strokes,
-      })),
-    };
-    
-    exportStrokeData(data);
-    
-    // Export confirmed characters as text
-    exportCharactersAsText(confirmedCharacters);
+    const sessionId = `session_${sessionStartTime}`;
+    exportComprehensiveSession(sessionId, confirmedCharacters, characterData);
   }, [characterData, confirmedCharacters, sessionStartTime]);
 
   const hasAnyStrokes = characterData.some(char => char.strokes.length > 0);
@@ -193,7 +181,7 @@ export function CharacterGrid() {
                     <button
                       key={i}
                       className="picker-candidate"
-                      onClick={() => handlePickerSelect(pickerState.cellIndex, candidate.character, candidate.pinyin)}
+                      onClick={() => handlePickerSelect(pickerState.cellIndex, candidate.character, candidate.pinyin, candidate.confidence)}
                     >
                       <span className="candidate-char">{candidate.character}</span>
                       <span className="candidate-pinyin">{candidate.pinyin}</span>

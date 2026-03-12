@@ -24,12 +24,17 @@ export function CharacterCell({
   const pointerTypeRef = useRef(null);
   const autoRecoveryTimerRef = useRef(null);
   const moveEventCountRef = useRef(0);
+  const lostCaptureGracePeriodRef = useRef(null);
+  const pendingLostCaptureDataRef = useRef(null);
   
-  // Cleanup function for auto-recovery timer
+  // Cleanup function for timers
   useEffect(() => {
     return () => {
       if (autoRecoveryTimerRef.current) {
         clearTimeout(autoRecoveryTimerRef.current);
+      }
+      if (lostCaptureGracePeriodRef.current) {
+        clearTimeout(lostCaptureGracePeriodRef.current);
       }
     };
   }, []);
@@ -76,6 +81,13 @@ export function CharacterCell({
       }
     }
     
+    // Clear any pending grace period
+    if (lostCaptureGracePeriodRef.current) {
+      clearTimeout(lostCaptureGracePeriodRef.current);
+      lostCaptureGracePeriodRef.current = null;
+    }
+    pendingLostCaptureDataRef.current = null;
+    
     pointerIdRef.current = null;
     pointerTypeRef.current = null;
     setPoints([]);
@@ -114,6 +126,61 @@ export function CharacterCell({
       if (onActivate) {
         onActivate(index);
       }
+      return;
+    }
+
+    // Check if we're in a grace period after lostpointercapture
+    // If so, continue the previous stroke instead of starting a new one
+    if (lostCaptureGracePeriodRef.current && pendingLostCaptureDataRef.current) {
+      logPointerEvent('POINTERDOWN-RESUME', {
+        pointerId: e.pointerId,
+        reason: 'Continuing stroke after lostpointercapture grace period',
+        previousPoints: pendingLostCaptureDataRef.current.points.length,
+      });
+
+      // Clear the grace period timer
+      clearTimeout(lostCaptureGracePeriodRef.current);
+      lostCaptureGracePeriodRef.current = null;
+
+      // Capture the new pointer
+      const canvas = canvasRef.current;
+      if (canvas && canvas.setPointerCapture) {
+        try {
+          canvas.setPointerCapture(e.pointerId);
+          logPointerEvent('POINTER-CAPTURED-RESUME', { pointerId: e.pointerId });
+        } catch (err) {
+          logPointerEvent('POINTER-CAPTURE-RESUME-FAILED', {
+            pointerId: e.pointerId,
+            error: err.message,
+          });
+        }
+      }
+
+      // Update pointer info
+      pointerIdRef.current = e.pointerId;
+      pointerTypeRef.current = e.pointerType;
+
+      // Continue from where we left off
+      setIsDrawing(true);
+      startAutoRecoveryTimer();
+
+      // Get the new point and append to existing points
+      const newPoint = getPoint(e);
+      setPoints([...pendingLostCaptureDataRef.current.points, newPoint]);
+
+      // Clear the pending data
+      pendingLostCaptureDataRef.current = null;
+
+      // Log the resume
+      logStrokeEvent(e, 'resume', {
+        cellIndex: index,
+        strokeNumber: strokes.length + 1,
+        pointerType: e.pointerType,
+        pressure: e.pressure,
+        coordinates: { x: newPoint.x, y: newPoint.y },
+        totalPoints: pendingLostCaptureDataRef.current ? pendingLostCaptureDataRef.current.points.length + 1 : 1,
+      });
+
       return;
     }
 
@@ -299,6 +366,8 @@ export function CharacterCell({
       pointerId: e.pointerId,
       expectedPointerId: pointerIdRef.current,
       isDrawing,
+      pointsCount: points.length,
+      willWait: isDrawing && points.length < 5, // Add this to indicate we're waiting
     });
 
     // Only process if this is the captured pointer
@@ -308,8 +377,62 @@ export function CharacterCell({
 
     clearAutoRecoveryTimer();
 
-    // If we lost capture but still have points, save the stroke
-    if (isDrawing && points.length > 0) {
+    // For very short strokes (1-4 points), wait 100ms to see if user continues
+    // This handles iPadOS aggressively reclaiming pointer capture
+    if (isDrawing && points.length > 0 && points.length < 5) {
+      logStrokeEvent(e, 'pause', {
+        cellIndex: index,
+        strokeNumber: strokes.length + 1,
+        pointsCount: points.length,
+        reason: 'lostpointercapture with few points - entering grace period',
+        gracePeriod: '100ms'
+      });
+
+      // Store the current stroke data
+      pendingLostCaptureDataRef.current = {
+        points: [...points],
+        startTime: points[0].timestamp,
+        pointerType: pointerTypeRef.current || 'touch',
+      };
+
+      // Set grace period - if no new pointerdown in 100ms, treat as stroke end
+      lostCaptureGracePeriodRef.current = setTimeout(() => {
+        // Grace period expired - save the short stroke
+        logStrokeEvent(e, 'end', {
+          cellIndex: index,
+          strokeNumber: strokes.length + 1,
+          pointsCount: pendingLostCaptureDataRef.current.points.length,
+          reason: 'grace period expired - saving short stroke',
+          pointerType: pendingLostCaptureDataRef.current.pointerType,
+          success: true
+        });
+
+        const newStroke = {
+          points: pendingLostCaptureDataRef.current.points.map(p => ({
+            x: p.x,
+            y: p.y,
+            pressure: p.pressure,
+            timestamp: p.timestamp
+          })),
+          startTime: pendingLostCaptureDataRef.current.startTime,
+          endTime: Date.now(),
+          pointerType: pendingLostCaptureDataRef.current.pointerType,
+        };
+
+        if (onStrokeComplete) {
+          onStrokeComplete(index, newStroke);
+        }
+
+        pendingLostCaptureDataRef.current = null;
+        handleForceReset();
+      }, 100);
+
+      // Don't reset yet - wait for grace period or new pointer
+      return;
+    }
+
+    // For longer strokes (5+ points), save immediately as before
+    if (isDrawing && points.length >= 5) {
       const newStroke = {
         points: points.map(p => ({
           x: p.x,
@@ -322,13 +445,22 @@ export function CharacterCell({
         pointerType: pointerTypeRef.current || 'touch',
       };
 
+      logStrokeEvent(e, 'end', {
+        cellIndex: index,
+        strokeNumber: strokes.length + 1,
+        pointsCount: points.length,
+        reason: 'lostpointercapture with sufficient points',
+        pointerType: pointerTypeRef.current,
+        success: true
+      });
+
       if (onStrokeComplete) {
         onStrokeComplete(index, newStroke);
       }
     }
 
     handleForceReset();
-  }, [isDrawing, points, index, onStrokeComplete, clearAutoRecoveryTimer, handleForceReset]);
+  }, [isDrawing, points, index, onStrokeComplete, clearAutoRecoveryTimer, handleForceReset, strokes.length]);
 
   const handleClear = useCallback((e) => {
     e.stopPropagation();

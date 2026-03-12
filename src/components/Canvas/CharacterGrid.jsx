@@ -26,11 +26,6 @@ export function CharacterGrid() {
   const [sessionStartTime] = useState(Date.now());
   const [hanziLookupReady, setHanziLookupReady] = useState(false);
   
-  // Global drawing state to prevent multi-cell drawing
-  const [drawingCellIndex, setDrawingCellIndex] = useState(null);
-  
-  const isAnyCellDrawing = drawingCellIndex !== null;
-  
   // Help modal state
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [helpResponse, setHelpResponse] = useState(null);
@@ -134,14 +129,6 @@ export function CharacterGrid() {
 
   const handleCellClick = useCallback((index) => {
     setActiveIndex(index);
-  }, []);
-
-  const handleDrawingStart = useCallback((cellIndex) => {
-    setDrawingCellIndex(cellIndex);
-  }, []);
-
-  const handleDrawingEnd = useCallback((cellIndex) => {
-    setDrawingCellIndex((prev) => (prev === cellIndex ? null : prev));
   }, []);
 
   const handleGetHelp = useCallback(async () => {
@@ -258,9 +245,6 @@ export function CharacterGrid() {
               onConfirm={handleConfirm}
               onCancelConfirm={handleCancelConfirm}
               onActivate={handleCellClick}
-              isAnyCellDrawing={isAnyCellDrawing}
-              onDrawingStart={handleDrawingStart}
-              onDrawingEnd={handleDrawingEnd}
             />
           </div>
         ))}

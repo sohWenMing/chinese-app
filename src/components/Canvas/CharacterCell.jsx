@@ -278,6 +278,8 @@ export function CharacterCell({
       expectedPointerId: pointerIdRef.current,
       isDrawing,
       pointsCount: points.length,
+      hasGracePeriod: !!lostCaptureGracePeriodRef.current,
+      hasPendingData: !!pendingLostCaptureDataRef.current,
     });
 
     // Only process if this is the captured pointer
@@ -286,6 +288,67 @@ export function CharacterCell({
     }
 
     clearAutoRecoveryTimer();
+
+    // Check if we're in a grace period from LOSTPOINTERCAPTURE
+    // If so, we need to merge the pending data with current points and save
+    if (lostCaptureGracePeriodRef.current && pendingLostCaptureDataRef.current) {
+      logPointerEvent('POINTERUP-GRACE-PERIOD', {
+        pendingPoints: pendingLostCaptureDataRef.current.points.length,
+        currentPoints: points.length,
+        reason: 'Pointer up during grace period - saving combined stroke',
+      });
+
+      // Clear the grace period timer
+      clearTimeout(lostCaptureGracePeriodRef.current);
+      lostCaptureGracePeriodRef.current = null;
+
+      // Merge pending points with current points
+      const combinedPoints = [
+        ...pendingLostCaptureDataRef.current.points,
+        ...points
+      ];
+
+      const newStroke = {
+        points: combinedPoints.map(p => ({
+          x: p.x,
+          y: p.y,
+          pressure: p.pressure,
+          timestamp: p.timestamp
+        })),
+        startTime: pendingLostCaptureDataRef.current.startTime,
+        endTime: Date.now(),
+        pointerType: pendingLostCaptureDataRef.current.pointerType,
+      };
+
+      // Calculate stroke duration and average pressure
+      const strokeDuration = combinedPoints.length > 0 ? Date.now() - pendingLostCaptureDataRef.current.startTime : 0;
+      const avgPressure = combinedPoints.length > 0
+        ? combinedPoints.reduce((sum, p) => sum + (p.pressure || 0.5), 0) / combinedPoints.length
+        : 0.5;
+
+      // Log stroke completion
+      logStrokeEvent(e, 'end', {
+        cellIndex: index,
+        strokeNumber: strokes.length + 1,
+        totalStrokes: strokes.length + 1,
+        pointsCount: combinedPoints.length,
+        strokeDuration: `${strokeDuration}ms`,
+        avgPressure: `${Math.round(avgPressure * 100)}%`,
+        pointerType: pendingLostCaptureDataRef.current.pointerType,
+        reason: 'grace period - pointer up',
+        success: true
+      });
+
+      // Notify parent about the new stroke
+      if (onStrokeComplete) {
+        onStrokeComplete(index, newStroke);
+      }
+
+      // Clear pending data and reset
+      pendingLostCaptureDataRef.current = null;
+      handleForceReset();
+      return;
+    }
 
     if (!isDrawing || points.length === 0) {
       logPointerEvent('POINTERUP-NO-STROKE', {

@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { getStroke } from 'perfect-freehand';
-import { logPointerEvent } from '../DebugLog';
+import { logPointerEvent, logStrokeEvent } from '../DebugLog';
 import './CharacterCell.css';
 
 export function CharacterCell({ 
@@ -23,6 +23,7 @@ export function CharacterCell({
   const pointerIdRef = useRef(null);
   const pointerTypeRef = useRef(null);
   const autoRecoveryTimerRef = useRef(null);
+  const moveEventCountRef = useRef(0);
   
   // Cleanup function for auto-recovery timer
   useEffect(() => {
@@ -155,7 +156,17 @@ export function CharacterCell({
     startAutoRecoveryTimer();
     const point = getPoint(e);
     setPoints([point]);
-  }, [isActive, onActivate, index, isAnyCellDrawing, onDrawingStart, startAutoRecoveryTimer]);
+
+    // Log stroke start with detailed metadata
+    logStrokeEvent(e, 'start', {
+      cellIndex: index,
+      strokeNumber: strokes.length + 1,
+      isActive,
+      pointerType: e.pointerType,
+      pressure: e.pressure,
+      coordinates: { x: point.x, y: point.y }
+    });
+  }, [isActive, onActivate, index, isAnyCellDrawing, onDrawingStart, startAutoRecoveryTimer, strokes.length]);
 
   const handlePointerMove = useCallback((e) => {
     if (!isDrawing || !isActive) return;
@@ -180,7 +191,19 @@ export function CharacterCell({
       });
       return newPoints;
     });
-  }, [isDrawing, isActive, startAutoRecoveryTimer]);
+
+    // Throttled logging for move events (log every 10th event)
+    moveEventCountRef.current++;
+    if (moveEventCountRef.current % 10 === 0) {
+      logStrokeEvent(e, 'move', {
+        cellIndex: index,
+        strokeNumber: strokes.length + 1,
+        pointsCount: points.length,
+        coordinates: { x: e.clientX, y: e.clientY },
+        pressure: e.pressure
+      });
+    }
+  }, [isDrawing, isActive, startAutoRecoveryTimer, index, strokes.length, points.length]);
 
   const handlePointerUp = useCallback((e) => {
     logPointerEvent('POINTERUP', {
@@ -217,9 +240,22 @@ export function CharacterCell({
       pointerType: pointerTypeRef.current || 'touch',
     };
 
-    logPointerEvent('STROKE-COMPLETE', {
+    // Calculate stroke duration and average pressure
+    const strokeDuration = points.length > 0 ? Date.now() - points[0].timestamp : 0;
+    const avgPressure = points.length > 0
+      ? points.reduce((sum, p) => sum + (p.pressure || 0.5), 0) / points.length
+      : 0.5;
+
+    // Log stroke completion with rich metadata
+    logStrokeEvent(e, 'end', {
+      cellIndex: index,
+      strokeNumber: strokes.length + 1,
+      totalStrokes: strokes.length + 1,
       pointsCount: points.length,
+      strokeDuration: `${strokeDuration}ms`,
+      avgPressure: `${Math.round(avgPressure * 100)}%`,
       pointerType: pointerTypeRef.current,
+      success: true
     });
 
     // Notify parent about the new stroke
@@ -227,8 +263,11 @@ export function CharacterCell({
       onStrokeComplete(index, newStroke);
     }
 
+    // Reset move event counter
+    moveEventCountRef.current = 0;
+
     handleForceReset();
-  }, [isDrawing, points, index, onStrokeComplete, clearAutoRecoveryTimer, handleForceReset]);
+  }, [isDrawing, points, index, onStrokeComplete, clearAutoRecoveryTimer, handleForceReset, strokes.length]);
 
   const handlePointerCancel = useCallback((e) => {
     logPointerEvent('POINTERCANCEL', {
@@ -242,9 +281,18 @@ export function CharacterCell({
       return;
     }
 
+    // Log cancellation with reason
+    logStrokeEvent(e, 'cancel', {
+      cellIndex: index,
+      strokeNumber: strokes.length + 1,
+      pointsCount: points.length,
+      reason: 'pointercancel event',
+      pointerType: pointerTypeRef.current
+    });
+
     clearAutoRecoveryTimer();
     handleForceReset();
-  }, [isDrawing, clearAutoRecoveryTimer, handleForceReset]);
+  }, [isDrawing, clearAutoRecoveryTimer, handleForceReset, index, strokes.length, points.length]);
 
   const handleLostPointerCapture = useCallback((e) => {
     logPointerEvent('LOSTPOINTERCAPTURE', {

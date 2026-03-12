@@ -4,6 +4,7 @@ import { Footer } from './components/Layout/Footer';
 import { CharacterGrid } from './components/Canvas/CharacterGrid';
 import PasswordGate from './components/Auth/PasswordGate';
 import { hasValidSession } from './utils/sessionManager';
+import { DebugLog } from './components/DebugLog';
 import './styles/global.css';
 import './App.css';
 
@@ -46,6 +47,7 @@ function App() {
             <CharacterGrid />
           </main>
           <Footer />
+          <DebugLog />
         </>
       )}
     </div>

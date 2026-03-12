@@ -1,0 +1,119 @@
+.debug-log-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  z-index: 9999;
+  max-height: 200px;
+  display: flex;
+  flex-direction: column;
+  border-top: 2px solid #FF69B4;
+}
+
+.debug-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 105, 180, 0.2);
+  border-bottom: 1px solid #FF69B4;
+}
+
+.debug-log-header h4 {
+  margin: 0;
+  color: #FF69B4;
+  font-size: 14px;
+}
+
+.debug-log-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.debug-clear,
+.debug-hide {
+  padding: 4px 8px;
+  border: 1px solid #FF69B4;
+  background: transparent;
+  color: #FF69B4;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.debug-clear:hover,
+.debug-hide:hover {
+  background: rgba(255, 105, 180, 0.2);
+}
+
+.debug-log-content {
+  overflow-y: auto;
+  padding: 8px 12px;
+  max-height: 150px;
+}
+
+.debug-entry {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.debug-time {
+  color: #888;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.debug-type {
+  color: #4CAF50;
+  min-width: 120px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.debug-type.pointerdown { color: #4CAF50; }
+.debug-type.pointermove { color: #2196F3; }
+.debug-type.pointerup { color: #FF9800; }
+.debug-type.pointercancel { color: #F44336; }
+.debug-type.lostpointercapture { color: #9C27B0; }
+.debug-type.state-reset { color: #E91E63; }
+.debug-type.auto-recovery { color: #FF5722; }
+.debug-type.drawing-start { color: #00BCD4; }
+.debug-type.drawing-end { color: #FFEB3B; }
+
+.debug-details {
+  color: #ccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-empty {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+}
+
+.debug-toggle {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 105, 180, 0.9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  z-index: 9999;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.debug-toggle:hover {
+  background: rgba(255, 105, 180, 1);
+}

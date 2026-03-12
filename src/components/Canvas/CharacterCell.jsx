@@ -16,6 +16,7 @@ export function CharacterCell({
   const canvasRef = useRef(null);
   const [points, setPoints] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const pointerTypeRef = useRef('touch');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -42,6 +43,9 @@ export function CharacterCell({
     
     // Capture pointer to track Apple Pencil even when moving fast/outside element
     e.target.setPointerCapture(e.pointerId);
+    
+    // Store pointer type for stroke width (pen = thinner, touch = thicker)
+    pointerTypeRef.current = e.pointerType || 'touch';
     
     setIsDrawing(true);
     const point = getPoint(e);
@@ -70,6 +74,7 @@ export function CharacterCell({
       })),
       startTime: points[0].timestamp,
       endTime: Date.now(),
+      pointerType: pointerTypeRef.current,
     };
     
     // Notify parent about the new stroke
@@ -117,9 +122,13 @@ export function CharacterCell({
     };
   };
 
-  const getSvgPathFromStroke = (strokePoints) => {
+  const getSvgPathFromStroke = (strokePoints, strokePointerType) => {
+    // Thinner for Apple Pencil (pen), thicker for finger (touch)
+    const isPen = strokePointerType === 'pen';
+    const strokeSize = isPen ? 10 : 16;
+    
     const stroke = getStroke(strokePoints, {
-      size: 16,
+      size: strokeSize,
       thinning: 0.5,
       smoothing: 0.5,
       streamline: 0.5,
@@ -168,14 +177,14 @@ export function CharacterCell({
           {strokes.map((stroke, i) => (
             <path
               key={i}
-              d={getSvgPathFromStroke(stroke.points)}
+              d={getSvgPathFromStroke(stroke.points, stroke.pointerType)}
               fill="#FF69B4"
               stroke="none"
             />
           ))}
           {points.length > 0 && (
             <path
-              d={getSvgPathFromStroke(points)}
+              d={getSvgPathFromStroke(points, pointerTypeRef.current)}
               fill="#FF69B4"
               stroke="none"
             />

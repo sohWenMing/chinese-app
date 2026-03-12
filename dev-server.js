@@ -1,9 +1,12 @@
 // dev-server.js
 // Simple Express server for local API development
 
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const PORT = 3001;
@@ -12,8 +15,11 @@ app.use(cors());
 app.use(express.json());
 
 // Import API handlers
-const validatePassword = require('./api/validate-password').default;
-const analyzeHomework = require('./api/analyze-homework').default;
+import validatePasswordModule from './api/validate-password.js';
+import analyzeHomeworkModule from './api/analyze-homework.js';
+
+const validatePassword = validatePasswordModule.default || validatePasswordModule;
+const analyzeHomework = analyzeHomeworkModule.default || analyzeHomeworkModule;
 
 // Wrap handlers for Express
 const wrapHandler = (handler) => async (req, res) => {

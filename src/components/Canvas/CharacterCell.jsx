@@ -12,10 +12,15 @@ export function CharacterCell({
   onConfirm,
   onCancelConfirm,
   onActivate,
+  isAnyCellDrawing,
+  onDrawingStart,
+  onDrawingEnd,
 }) {
   const canvasRef = useRef(null);
   const [points, setPoints] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const pointerIdRef = useRef(null);
+  const pointerTypeRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -38,21 +43,69 @@ export function CharacterCell({
       }
       return;
     }
+
+    // Check if another cell is already drawing
+    if (isAnyCellDrawing) {
+      return;
+    }
+
     e.preventDefault();
+    
+    // Capture the pointer to ensure continuous tracking (critical for Apple Pencil)
+    const canvas = canvasRef.current;
+    if (canvas && canvas.setPointerCapture) {
+      canvas.setPointerCapture(e.pointerId);
+    }
+    
+    // Store pointer info
+    pointerIdRef.current = e.pointerId;
+    pointerTypeRef.current = e.pointerType;
+    
+    // Notify parent that drawing has started
+    if (onDrawingStart) {
+      onDrawingStart(index);
+    }
+    
     setIsDrawing(true);
     const point = getPoint(e);
     setPoints([point]);
-  }, [isActive, onActivate, index]);
+  }, [isActive, onActivate, index, isAnyCellDrawing, onDrawingStart]);
 
   const handlePointerMove = useCallback((e) => {
     if (!isDrawing || !isActive) return;
     e.preventDefault();
-    const point = getPoint(e);
-    setPoints((prev) => [...prev, point]);
+    
+    // Capture all coalesced events for smooth Apple Pencil strokes
+    // getCoalescedEvents returns all points between the last event and this one
+    const coalescedEvents = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    
+    setPoints((prev) => {
+      const newPoints = [...prev];
+      coalescedEvents.forEach(event => {
+        newPoints.push(getPoint(event));
+      });
+      return newPoints;
+    });
   }, [isDrawing, isActive]);
 
-  const handlePointerUp = useCallback(() => {
-    if (!isDrawing || points.length === 0) return;
+  const handlePointerUp = useCallback((e) => {
+    if (!isDrawing || points.length === 0) {
+      // Still need to release pointer capture and notify parent even if no stroke
+      if (pointerIdRef.current && canvasRef.current && canvasRef.current.releasePointerCapture) {
+        try {
+          canvasRef.current.releasePointerCapture(pointerIdRef.current);
+        } catch (err) {
+          // Pointer may already be released, ignore error
+        }
+      }
+      pointerIdRef.current = null;
+      pointerTypeRef.current = null;
+      setIsDrawing(false);
+      if (onDrawingEnd) {
+        onDrawingEnd(index);
+      }
+      return;
+    }
     
     const newStroke = {
       points: points.map(p => ({ 
@@ -63,6 +116,7 @@ export function CharacterCell({
       })),
       startTime: points[0].timestamp,
       endTime: Date.now(),
+      pointerType: pointerTypeRef.current || 'touch',
     };
     
     // Notify parent about the new stroke
@@ -70,9 +124,25 @@ export function CharacterCell({
       onStrokeComplete(index, newStroke);
     }
     
+    // Release pointer capture
+    if (pointerIdRef.current && canvasRef.current && canvasRef.current.releasePointerCapture) {
+      try {
+        canvasRef.current.releasePointerCapture(pointerIdRef.current);
+      } catch (err) {
+        // Pointer may already be released, ignore error
+      }
+    }
+    
+    pointerIdRef.current = null;
+    pointerTypeRef.current = null;
     setPoints([]);
     setIsDrawing(false);
-  }, [isDrawing, points, index, onStrokeComplete]);
+    
+    // Notify parent that drawing has ended
+    if (onDrawingEnd) {
+      onDrawingEnd(index);
+    }
+  }, [isDrawing, points, index, onStrokeComplete, onDrawingEnd]);
 
   const handleClear = useCallback((e) => {
     e.stopPropagation();
@@ -110,12 +180,32 @@ export function CharacterCell({
     };
   };
 
-  const getSvgPathFromStroke = (strokePoints) => {
+  const getSvgPathFromStroke = (strokePoints, strokePointerType) => {
+    // Determine base size based on pointer type
+    // Pen (Apple Pencil) gets thinner strokes, touch gets thicker
+    const isPen = strokePointerType === 'pen' || pointerTypeRef.current === 'pen';
+    const baseSize = isPen ? 10 : 16;
+    
+    // Use pressure data if available for variable stroke width
+    const usePressure = strokePoints.some(p => p.pressure && p.pressure !== 0.5);
+    const thinning = usePressure ? 0.7 : 0.5;
+    
     const stroke = getStroke(strokePoints, {
-      size: 16,
-      thinning: 0.5,
+      size: baseSize,
+      thinning: thinning,
       smoothing: 0.5,
       streamline: 0.5,
+      easing: (t) => t,
+      start: {
+        cap: true,
+        taper: 0,
+        easing: (t) => t,
+      },
+      end: {
+        cap: true,
+        taper: 0,
+        easing: (t) => t,
+      },
     });
     
     if (stroke.length === 0) return '';
@@ -161,14 +251,14 @@ export function CharacterCell({
           {strokes.map((stroke, i) => (
             <path
               key={i}
-              d={getSvgPathFromStroke(stroke.points)}
+              d={getSvgPathFromStroke(stroke.points, stroke.pointerType)}
               fill="#FF69B4"
               stroke="none"
             />
           ))}
           {points.length > 0 && (
             <path
-              d={getSvgPathFromStroke(points)}
+              d={getSvgPathFromStroke(points, pointerTypeRef.current)}
               fill="#FF69B4"
               stroke="none"
             />

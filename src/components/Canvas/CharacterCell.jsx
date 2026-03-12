@@ -38,19 +38,7 @@ export function CharacterCell({
       }
       return;
     }
-    
     e.preventDefault();
-    
-    // Capture the pointer (helps with Apple Pencil)
-    const canvas = canvasRef.current;
-    if (canvas && canvas.setPointerCapture) {
-      try {
-        canvas.setPointerCapture(e.pointerId);
-      } catch (err) {
-        // Ignore errors
-      }
-    }
-    
     setIsDrawing(true);
     const point = getPoint(e);
     setPoints([point]);
@@ -63,18 +51,8 @@ export function CharacterCell({
     setPoints((prev) => [...prev, point]);
   }, [isDrawing, isActive]);
 
-  const handlePointerUp = useCallback((e) => {
+  const handlePointerUp = useCallback(() => {
     if (!isDrawing || points.length === 0) return;
-    
-    // Release pointer capture
-    const canvas = canvasRef.current;
-    if (canvas && canvas.releasePointerCapture) {
-      try {
-        canvas.releasePointerCapture(e.pointerId);
-      } catch (err) {
-        // Ignore errors
-      }
-    }
     
     const newStroke = {
       points: points.map(p => ({ 
@@ -85,7 +63,6 @@ export function CharacterCell({
       })),
       startTime: points[0].timestamp,
       endTime: Date.now(),
-      pointerType: e.pointerType || 'touch',
     };
     
     // Notify parent about the new stroke
@@ -133,13 +110,9 @@ export function CharacterCell({
     };
   };
 
-  const getSvgPathFromStroke = (strokePoints, strokePointerType) => {
-    // Thinner for pen, thicker for finger
-    const isPen = strokePointerType === 'pen';
-    const baseSize = isPen ? 10 : 16;
-    
+  const getSvgPathFromStroke = (strokePoints) => {
     const stroke = getStroke(strokePoints, {
-      size: baseSize,
+      size: 16,
       thinning: 0.5,
       smoothing: 0.5,
       streamline: 0.5,
@@ -188,14 +161,14 @@ export function CharacterCell({
           {strokes.map((stroke, i) => (
             <path
               key={i}
-              d={getSvgPathFromStroke(stroke.points, stroke.pointerType)}
+              d={getSvgPathFromStroke(stroke.points)}
               fill="#FF69B4"
               stroke="none"
             />
           ))}
           {points.length > 0 && (
             <path
-              d={getSvgPathFromStroke(points, 'touch')}
+              d={getSvgPathFromStroke(points)}
               fill="#FF69B4"
               stroke="none"
             />

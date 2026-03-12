@@ -39,6 +39,10 @@ export function CharacterCell({
       return;
     }
     e.preventDefault();
+    
+    // Capture pointer to track Apple Pencil even when moving fast/outside element
+    e.target.setPointerCapture(e.pointerId);
+    
     setIsDrawing(true);
     const point = getPoint(e);
     setPoints([point]);
@@ -51,8 +55,11 @@ export function CharacterCell({
     setPoints((prev) => [...prev, point]);
   }, [isDrawing, isActive]);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e) => {
     if (!isDrawing || points.length === 0) return;
+    
+    // Release pointer capture
+    e.target.releasePointerCapture?.(e.pointerId);
     
     const newStroke = {
       points: points.map(p => ({ 
